@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">정밀 GPS</string>
+    <string name="title_activity_main">정밀 GPS</string>
+    <string name="package_name">com.gps.accurateapp</string>
+    <string name="custom_url_scheme">com.gps.accurateapp</string>
+</resources>

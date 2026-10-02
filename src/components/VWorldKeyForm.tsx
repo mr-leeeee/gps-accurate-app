@@ -135,7 +135,7 @@ export const VWorldKeyForm: React.FC<VWorldKeyFormProps> = ({
               type={revealed ? 'text' : 'password'}
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
-              placeholder="AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE"
+              placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
               autoCapitalize="characters"
               autoCorrect="off"
               spellCheck={false}

@@ -13,7 +13,7 @@ import { StorageError } from '../types/errors';
 import { VWORLD_KEY_EXPIRY_WARN_DAYS } from '../constants';
 
 const DAY = 24 * 60 * 60 * 1000;
-const VALID_KEY = 'AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE';
+const VALID_KEY = 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX';
 const STORAGE_KEY = 'SMARTPHONE_GPS_VWORLD_KEY_V1';
 
 const record = (expiresAt: number | null): VWorldKeyRecord => ({

@@ -22,36 +22,36 @@ describe('BASE_TILE_LAYER', () => {
 
   describe('인증키가 있을 때', () => {
     it('VWorld WMTS 경로 템플릿을 사용한다', async () => {
-      const layer = await loadBaseTileLayer('TEST-KEY-1234');
+      const layer = await loadBaseTileLayer('x-test-key-0000');
 
       expect(layer.url).toBe(
-        'https://api.vworld.kr/req/wmts/1.0.0/TEST-KEY-1234/Base/{z}/{y}/{x}.png',
+        'https://api.vworld.kr/req/wmts/1.0.0/x-test-key-0000/Base/{z}/{y}/{x}.png',
       );
     });
 
     // 순서를 관례적인 {z}/{x}/{y}로 "정정"하면 404가 나고 지도가 조용히 깨진다.
     it('경로 순서가 {z}/{y}/{x}이다', async () => {
-      const { url } = await loadBaseTileLayer('TEST-KEY-1234');
+      const { url } = await loadBaseTileLayer('x-test-key-0000');
       const [, tilePath] = url.split('/Base/');
 
       expect(tilePath).toBe('{z}/{y}/{x}.png');
     });
 
     it('쿼리 파라미터가 없다', async () => {
-      const { url } = await loadBaseTileLayer('TEST-KEY-1234');
+      const { url } = await loadBaseTileLayer('x-test-key-0000');
 
       expect(url).not.toContain('?');
     });
 
     it('zoom 범위가 6~19다', async () => {
-      const layer = await loadBaseTileLayer('TEST-KEY-1234');
+      const layer = await loadBaseTileLayer('x-test-key-0000');
 
       expect(layer.minZoom).toBe(6);
       expect(layer.maxZoom).toBe(19);
     });
 
     it('출처 표기가 포함된다', async () => {
-      const { attribution } = await loadBaseTileLayer('TEST-KEY-1234');
+      const { attribution } = await loadBaseTileLayer('x-test-key-0000');
 
       expect(attribution).toContain('국토교통부');
     });
@@ -88,22 +88,22 @@ describe('resolveBaseTileLayer', () => {
   });
 
   it('앱 저장 키가 빌드타임 키보다 우선한다', async () => {
-    const layer = await loadResolved('BUILD-TIME-KEY', 'USER-SAVED-KEY', true);
+    const layer = await loadResolved('x-build-time-key', 'x-user-saved-key', true);
 
-    expect(layer.url).toContain('/USER-SAVED-KEY/');
-    expect(layer.url).not.toContain('BUILD-TIME-KEY');
+    expect(layer.url).toContain('/x-user-saved-key/');
+    expect(layer.url).not.toContain('x-build-time-key');
   });
 
   it('저장 기록이 없으면 빌드타임 키를 사용한다', async () => {
-    const layer = await loadResolved('BUILD-TIME-KEY', '', false);
+    const layer = await loadResolved('x-build-time-key', '', false);
 
     expect(layer.url).toBe(
-      'https://api.vworld.kr/req/wmts/1.0.0/BUILD-TIME-KEY/Base/{z}/{y}/{x}.png',
+      'https://api.vworld.kr/req/wmts/1.0.0/x-build-time-key/Base/{z}/{y}/{x}.png',
     );
   });
 
   it('만료돼서 키가 비어도 빌드타임 키로 되돌아가지 않고 OSM으로 폴백한다', async () => {
-    const layer = await loadResolved('BUILD-TIME-KEY', '', true);
+    const layer = await loadResolved('x-build-time-key', '', true);
 
     expect(layer.url).toContain('basemaps.cartocdn.com');
     expect(layer.isVWorld).toBe(false);

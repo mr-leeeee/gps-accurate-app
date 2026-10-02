@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import type { LocationData, SavedPlace } from '../types/location';
-import { BASE_TILE_LAYER } from '../constants';
+import { type TileLayerConfig } from '../constants';
 import { X, Map, Satellite, Maximize2, Minimize2, Crosshair } from 'lucide-react';
 
 interface MapViewerProps {
   currentLocation: LocationData | null;
   savedPlaces: SavedPlace[];
   selectedPlace: SavedPlace | null;
+  tileConfig: TileLayerConfig;
   routeCoordinates?: [number, number][];
   stopOrders?: Record<string, number>;
   isLiveTracking?: boolean;
@@ -20,6 +21,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   currentLocation,
   savedPlaces,
   selectedPlace,
+  tileConfig,
   routeCoordinates,
   stopOrders = {},
   isLiveTracking = false,
@@ -92,14 +94,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       center: [initialLat, initialLng],
       zoom: 16,
       zoomControl: false,
-      minZoom: BASE_TILE_LAYER.minZoom,
     });
-
-    baseLayerRef.current = L.tileLayer(BASE_TILE_LAYER.url, {
-      attribution: BASE_TILE_LAYER.attribution,
-      minZoom: BASE_TILE_LAYER.minZoom,
-      maxZoom: BASE_TILE_LAYER.maxZoom,
-    }).addTo(map);
 
     // 위성 레이어 (ESRI World Imagery - 무료, API 키 불필요)
     satelliteLayerRef.current = L.tileLayer(
@@ -127,30 +122,32 @@ export const MapViewer: React.FC<MapViewerProps> = ({
     };
   }, []);
 
-  // 레이어 전환 함수
-  const toggleLayer = () => {
+  useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (isSatellite) {
-      // 위성 → 지도 전환
-      if (satelliteLayerRef.current) {
-        map.removeLayer(satelliteLayerRef.current);
-      }
-      if (baseLayerRef.current) {
-        baseLayerRef.current.addTo(map);
-      }
-    } else {
-      // 지도 → 위성 전환
-      if (baseLayerRef.current) {
-        map.removeLayer(baseLayerRef.current);
-      }
-      if (satelliteLayerRef.current) {
-        satelliteLayerRef.current.addTo(map);
-      }
+    map.setMinZoom(tileConfig.minZoom);
+
+    if (baseLayerRef.current) {
+      map.removeLayer(baseLayerRef.current);
     }
 
-    setIsSatellite(!isSatellite);
+    const layer = L.tileLayer(tileConfig.url, {
+      attribution: tileConfig.attribution,
+      minZoom: tileConfig.minZoom,
+      maxZoom: tileConfig.maxZoom,
+    });
+    baseLayerRef.current = layer;
+
+    if (!isSatellite) {
+      layer.addTo(map);
+    }
+  }, [tileConfig, isSatellite]);
+
+  // 레이어 전환 함수
+  const toggleLayer = () => {
+    if (!mapInstanceRef.current) return;
+    setIsSatellite((prev) => !prev);
   };
 
   // 2. 현재 위치 및 오차 반경 원 업데이트

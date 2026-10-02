@@ -1,5 +1,5 @@
 import type { LocationData, SavedPlace } from './types/location';
-import { getEnvNumber } from './utils/env';
+import { getEnvNumber, getEnvString } from './utils/env';
 
 /**
  * 고스트 모드 (개발 전용 기능)
@@ -14,6 +14,37 @@ import { getEnvNumber } from './utils/env';
  *   - GPS 측정 실패 시 기본 좌표(서울시청) 폴백
  */
 export const GHOST_MODE = import.meta.env.VITE_GHOST_MODE === '1';
+
+/**
+ * VWorld(공간정보 오픈플랫폼) 인증키
+ *
+ * 미설정 시 아래의 OSM 기반 기본 타일로 폴백합니다.
+ * 발급: https://www.vworld.kr → 오픈API → 인증키 신청 (무료, 즉시 발급)
+ */
+export const VWORLD_TILE_KEY = getEnvString('VITE_VWORLD_TILE_KEY', '');
+
+/**
+ * 기본 지도 레이어
+ *
+ * 인증키가 있으면 VWorld(국내 관제 데이터), 없으면 OSM 기반 CartoDB로 폴백합니다.
+ *
+ * 경로 순서는 반드시 `{z}/{y}/{x}` 입니다. VWorld의 tileRow/tileCol이 각각
+ * Google 인덱스 Y/X라 Leaflet의 {y}/{x}에 대응하지만, 관례대로
+ * `{z}/{x}/{y}`로 바꾸면 404가 되고 지도가 깨집니다. Base 레이어는 zoom 6~19.
+ */
+export const BASE_TILE_LAYER = VWORLD_TILE_KEY
+  ? {
+      url: `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_TILE_KEY}/Base/{z}/{y}/{x}.png`,
+      minZoom: 6,
+      maxZoom: 19,
+      attribution: '공간정보 오픈플랫폼(브이월드) · 국토교통부',
+    }
+  : {
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      minZoom: 0,
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    };
 
 /**
  * GPS 정확도 임계값 (미터)

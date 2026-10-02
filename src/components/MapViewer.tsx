@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import type { LocationData, SavedPlace } from '../types/location';
+import { BASE_TILE_LAYER } from '../constants';
 import { X, Map, Satellite, Maximize2, Minimize2, Crosshair } from 'lucide-react';
 
 interface MapViewerProps {
@@ -32,7 +33,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   const accuracyCircleRef = useRef<L.Circle | null>(null);
   const placesLayerRef = useRef<L.LayerGroup | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
-  const osmLayerRef = useRef<L.TileLayer | null>(null);
+  const baseLayerRef = useRef<L.TileLayer | null>(null);
   const satelliteLayerRef = useRef<L.TileLayer | null>(null);
   const [isSatellite, setIsSatellite] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -91,12 +92,13 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       center: [initialLat, initialLng],
       zoom: 16,
       zoomControl: false,
+      minZoom: BASE_TILE_LAYER.minZoom,
     });
 
-    // 기본 지도 레이어 (CartoDB Voyager)
-    osmLayerRef.current = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
+    baseLayerRef.current = L.tileLayer(BASE_TILE_LAYER.url, {
+      attribution: BASE_TILE_LAYER.attribution,
+      minZoom: BASE_TILE_LAYER.minZoom,
+      maxZoom: BASE_TILE_LAYER.maxZoom,
     }).addTo(map);
 
     // 위성 레이어 (ESRI World Imagery - 무료, API 키 불필요)
@@ -135,13 +137,13 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       if (satelliteLayerRef.current) {
         map.removeLayer(satelliteLayerRef.current);
       }
-      if (osmLayerRef.current) {
-        osmLayerRef.current.addTo(map);
+      if (baseLayerRef.current) {
+        baseLayerRef.current.addTo(map);
       }
     } else {
       // 지도 → 위성 전환
-      if (osmLayerRef.current) {
-        map.removeLayer(osmLayerRef.current);
+      if (baseLayerRef.current) {
+        map.removeLayer(baseLayerRef.current);
       }
       if (satelliteLayerRef.current) {
         satelliteLayerRef.current.addTo(map);

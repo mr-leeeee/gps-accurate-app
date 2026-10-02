@@ -8,10 +8,7 @@ const REQUIRED_VARS = [
   'VITE_DEFAULT_LONGITUDE',
 ] as const;
 
-const OPTIONAL_VARS = [
-  'VITE_APP_NAME',
-  'VITE_APP_VERSION',
-] as const;
+const OPTIONAL_VARS = ['VITE_APP_NAME', 'VITE_APP_VERSION', 'VITE_VWORLD_TILE_KEY'] as const;
 
 export function validateEnv(): void {
   const missing: string[] = [];

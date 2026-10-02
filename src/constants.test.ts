@@ -7,6 +7,13 @@ async function loadBaseTileLayer(key: string) {
   return BASE_TILE_LAYER;
 }
 
+async function loadResolved(buildTimeKey: string, userKey: string, hasUserRecord: boolean) {
+  vi.resetModules();
+  vi.stubEnv('VITE_VWORLD_TILE_KEY', buildTimeKey);
+  const { resolveBaseTileLayer } = await import('./constants');
+  return resolveBaseTileLayer(userKey, hasUserRecord);
+}
+
 describe('BASE_TILE_LAYER', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -71,5 +78,41 @@ describe('BASE_TILE_LAYER', () => {
 
       expect(url).not.toContain('vworld');
     });
+  });
+});
+
+describe('resolveBaseTileLayer', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('앱 저장 키가 빌드타임 키보다 우선한다', async () => {
+    const layer = await loadResolved('BUILD-TIME-KEY', 'USER-SAVED-KEY', true);
+
+    expect(layer.url).toContain('/USER-SAVED-KEY/');
+    expect(layer.url).not.toContain('BUILD-TIME-KEY');
+  });
+
+  it('저장 기록이 없으면 빌드타임 키를 사용한다', async () => {
+    const layer = await loadResolved('BUILD-TIME-KEY', '', false);
+
+    expect(layer.url).toBe(
+      'https://api.vworld.kr/req/wmts/1.0.0/BUILD-TIME-KEY/Base/{z}/{y}/{x}.png',
+    );
+  });
+
+  it('만료돼서 키가 비어도 빌드타임 키로 되돌아가지 않고 OSM으로 폴백한다', async () => {
+    const layer = await loadResolved('BUILD-TIME-KEY', '', true);
+
+    expect(layer.url).toContain('basemaps.cartocdn.com');
+    expect(layer.isVWorld).toBe(false);
+  });
+
+  it('저장 기록도 빌드타임 키도 없으면 OSM으로 폴백한다', async () => {
+    const layer = await loadResolved('', '', false);
+
+    expect(layer.url).toContain('basemaps.cartocdn.com');
+    expect(layer.isVWorld).toBe(false);
   });
 });

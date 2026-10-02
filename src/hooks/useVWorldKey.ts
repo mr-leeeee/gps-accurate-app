@@ -9,7 +9,7 @@ import {
   type VWorldKeyRecord,
   type VWorldKeyStatus,
 } from '../services/vworldKeyService';
-import { buildBaseTileLayer, type TileLayerConfig } from '../constants';
+import { resolveBaseTileLayer, type TileLayerConfig } from '../constants';
 
 const STATUS_REFRESH_INTERVAL = 60 * 60 * 1000;
 
@@ -56,8 +56,8 @@ export function useVWorldKey(): UseVWorldKeyResult {
   const daysLeft = useMemo(() => daysUntilExpiry(record, now), [record, now]);
 
   // now가 매시간 갱신되므로 키 문자열로 메모한다 — now에 deps를 걸면 매시간 레이어가 재생성된다
-const activeKey = resolveActiveKey(record, now);
-  const tileConfig = useMemo(() => buildBaseTileLayer(activeKey), [activeKey]);
+  const activeKey = resolveActiveKey(record, now);
+  const tileConfig = useMemo(() => resolveBaseTileLayer(activeKey, record !== null), [activeKey, record]);
 
   return { record, status, daysLeft, tileConfig, save, clear };
 }

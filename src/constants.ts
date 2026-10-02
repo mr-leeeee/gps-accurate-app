@@ -58,6 +58,16 @@ export function buildBaseTileLayer(key: string): TileLayerConfig {
 /** 앱 내 설정에서 입력한 키가 이 빌드타임 값보다 우선한다 */
 export const BASE_TILE_LAYER = buildBaseTileLayer(VWORLD_TILE_KEY);
 
+/**
+ * 지도에 실제로 쓸 베이스 레이어를 고른다.
+ * 저장 기록이 없을 때만 빌드타임 키를 쓰고, 기록이 있으면 저장 키를 따른다.
+ * 만료로 키가 비면 OSM으로 폴백한다 — 빌드타임 키로 되돌아가면
+ * 만료 배지와 실제 타일이 어긋나고, 보통 두 키가 같아 타일만 깨진다.
+ */
+export function resolveBaseTileLayer(userKey: string, hasUserRecord: boolean): TileLayerConfig {
+  return hasUserRecord ? buildBaseTileLayer(userKey) : BASE_TILE_LAYER;
+}
+
 export const VWORLD_KEY_EXPIRY_WARN_DAYS = 14;
 
 export const VWORLD_LINKS = {

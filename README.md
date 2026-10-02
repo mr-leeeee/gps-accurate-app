@@ -164,7 +164,7 @@ gps/
 | `VITE_DEFAULT_LATITUDE` | 기본 위도 | 37.566535 |
 | `VITE_DEFAULT_LONGITUDE` | 기본 경도 | 126.977969 |
 | `VITE_GHOST_MODE` | 테스트 도구 활성화 (`.env.ghost`에서 `1`로 설정) | 미설정 |
-| `VITE_VWORLD_TILE_KEY` | VWorld 인증키. 미설정 시 OSM 기본 타일로 폴백 | 미설정 |
+| `VITE_VWORLD_TILE_KEY` | VWorld 인증키. **커밋되지 않는 `.env.local`에 넣을 것.** 미설정 시 OSM 기본 타일로 폴백 | 미설정 |
 
 ---
 

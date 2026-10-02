@@ -43,7 +43,15 @@
 - OSRM API를 통한 도로 주행거리 산출
 - 지도에 경로 표시
 
-### 6. 테스트 위치 (고스트 모드 전용)
+### 6. VWorld 국내 지도 및 개인 인증키
+- 브이월드(공간정보 오픈플랫폼) WMTS 베이스맵 — zoom 6~19
+- 앱 내 헤더의 열쇠 아이콘으로 개인 인증키와 만료일을 직접 입력·저장 (git에 커밋되지 않음)
+- 저장 즉시 실행 중 지도에 반영되며, 앱을 다시 꺼도 유지
+- 만료일 입력 시 임박(14일) 경고, 만료 시 자동으로 OSM 기본 타일로 폴백
+- 인증키 미설정·만료 상태는 헤더 표시등(회색/초록/노랑/빨강)으로 확인
+- 위성(ESRI World Imagery) 레이어는 API 키 없이 무료로 제공
+
+### 7. 테스트 위치 (고스트 모드 전용)
 - 모의 위치 설정 (강남역, 판교, 해운대)
 - `pnpm build:ghost`로 빌드할 때만 활성화되며, 일반 빌드에서는 코드 자체가 번들에 포함되지 않음
 - GPS 실패 시 기본 좌표 표시, 저장 목록 최초 실행 시 샘플 장소 주입도 고스트 모드 전용
@@ -122,15 +130,19 @@ gps/
 │   │   ├── PlaceItem.tsx          # 장소 목록 항목
 │   │   ├── PlaceList.tsx          # 장소 목록
 │   │   ├── RouteOptimizeModal.tsx # 최적 동선 모달
-│   │   └── TestLocationPanel.tsx  # 테스트 위치 패널
+│   │   ├── TestLocationPanel.tsx  # 테스트 위치 패널
+│   │   ├── VWorldKeyForm.tsx      # 인증키·만료일 입력 폼
+│   │   └── VWorldKeyModal.tsx     # 인증키 설정 모달 셸
 │   ├── hooks/               # 커스텀 훅
 │   │   ├── useLocationManagement.ts  # 위치 관리
-│   │   └── usePlaceManagement.ts     # 장소 관리
+│   │   ├── usePlaceManagement.ts     # 장소 관리
+│   │   └── useVWorldKey.ts           # 인증키 상태 및 지도 설정
 │   ├── services/            # 비즈니스 로직
 │   │   ├── locationService.ts    # GPS + 주소 검색
 │   │   ├── navigationService.ts  # 네비게이션 딥링크
 │   │   ├── routeService.ts       # 경로 계산
-│   │   └── storageService.ts     # 로컬 스토리지
+│   │   ├── storageService.ts     # 로컬 스토리지
+│   │   └── vworldKeyService.ts   # 인증키 저장 및 만료일 계산
 │   ├── types/               # TypeScript 타입
 │   │   ├── errors.ts             # 커스텀 에러 클래스
 │   │   └── location.ts           # 위치/장소 타입
@@ -164,7 +176,27 @@ gps/
 | `VITE_DEFAULT_LATITUDE` | 기본 위도 | 37.566535 |
 | `VITE_DEFAULT_LONGITUDE` | 기본 경도 | 126.977969 |
 | `VITE_GHOST_MODE` | 테스트 도구 활성화 (`.env.ghost`에서 `1`로 설정) | 미설정 |
-| `VITE_VWORLD_TILE_KEY` | VWorld 인증키. **커밋되지 않는 `.env.local`에 넣을 것.** 미설정 시 OSM 기본 타일로 폴백 | 미설정 |
+| `VITE_VWORLD_TILE_KEY` | VWorld 인증키(빌드 시 기본값). 앱 안에서 입력한 개인 키가 우선하며, 둘 다 없으면 OSM 기본 타일로 폴백 | 미설정 |
+
+---
+
+## VWorld 인증키 사용법
+
+국내 정밀 지도를 쓰려면 브이월드(공간정보 오픈플랫폼)에서 무료 인증키를 받아야 합니다.
+앱 안에서 직접 입력하면 **git에 커밋되지 않고** 기기에만 저장됩니다.
+
+1. [브이월드 포털](https://www.vworld.kr/v4po_main.do) 회원가입 및 로그인
+   - 아직 회원이 없다면 [회원가입](https://www.vworld.kr/v4po_usrcla_a002.do)
+2. 상단 메뉴 **오픈API** → **인증키 발급** 진입
+3. 서비스는 반드시 **2D 지도 API**로 선택하고, 도메인/IP 또는 인증서를 설정
+4. 발급된 인증키를 복사해 앱 헤더의 열쇠 아이콘 → **인증키 입력** 화면에 붙여넣기
+
+인증키는 보통 발급 후 6개월간 유효하며 최대 3회 연장(총 12개월) 가능합니다. 인증키와
+만료일을 함께 저장하면 만료 임박 시 헤더 표시등이 노란색으로 바뀌고, 만료되면
+자동으로 OSM 기본 타일로 폴백되어 지도 사용이 중단되지는 않습니다.
+
+> 빌드 시 기본 키를 배포자에 넣고 싶다면 추적 제외된 `.env.local`에
+> `VITE_VWORLD_TILE_KEY`를 설정하세요. 앱에서 입력한 개인 키가 항상 우선합니다.
 
 ---
 

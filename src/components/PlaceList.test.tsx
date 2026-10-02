@@ -47,10 +47,33 @@ describe('PlaceList', () => {
     vi.clearAllMocks();
   });
 
-  it('장소 목록 헤더와 개수를 표시한다', () => {
+  it('장소 목록 개수를 배지로 표시한다', () => {
     render(<PlaceList {...defaultProps} />);
-    expect(screen.getByText('저장된 장소 목록')).toBeDefined();
-    expect(screen.getByText('2개')).toBeDefined();
+    expect(screen.getByText('저장된 장소 2개')).toBeDefined();
+    expect(screen.getByText('2')).toBeDefined();
+  });
+
+  it('툴바 버튼은 아이콘만 노출하고 제목을 aria-label로 제공한다', () => {
+    render(
+      <PlaceList
+        {...defaultProps}
+        onOpenTrash={vi.fn()}
+        onImportBackup={vi.fn()}
+        onExportBackup={vi.fn()}
+        trashCount={0}
+      />
+    );
+    expect(screen.getByLabelText('도로명 또는 지번 주소 직접 입력')).toBeDefined();
+    expect(screen.getByLabelText('최적 동선 계산')).toBeDefined();
+    expect(screen.getByLabelText('휴지통 열기')).toBeDefined();
+    expect(screen.getByLabelText('장소 목록 백업 파일 만들기')).toBeDefined();
+    expect(screen.getByLabelText('백업 파일에서 장소 목록 불러오기')).toBeDefined();
+    expect(screen.getByLabelText('전체 장소를 휴지통으로 옮기기')).toBeDefined();
+  });
+
+  it('휴지통에 삭제된 장소가 있으면 개수를 aria-label에 포함한다', () => {
+    render(<PlaceList {...defaultProps} onOpenTrash={vi.fn()} trashCount={3} />);
+    expect(screen.getByLabelText('휴지통 열기, 삭제된 장소 3개')).toBeDefined();
   });
 
   it('모든 장소 이름을 렌더링한다', () => {
@@ -78,14 +101,14 @@ describe('PlaceList', () => {
 
   it('주소 추가 버튼 클릭 시 onOpenAddAddressModal을 호출한다', () => {
     render(<PlaceList {...defaultProps} />);
-    const addBtn = screen.getByText('주소 추가');
+    const addBtn = screen.getByLabelText('도로명 또는 지번 주소 직접 입력');
     fireEvent.click(addBtn);
     expect(defaultProps.onOpenAddAddressModal).toHaveBeenCalledTimes(1);
   });
 
   it('최적 동선 버튼 클릭 시 onOpenRouteOptimizer을 호출한다', () => {
     render(<PlaceList {...defaultProps} />);
-    const routeBtn = screen.getByText('최적 동선');
+    const routeBtn = screen.getByLabelText('최적 동선 계산');
     fireEvent.click(routeBtn);
     expect(defaultProps.onOpenRouteOptimizer).toHaveBeenCalledTimes(1);
   });

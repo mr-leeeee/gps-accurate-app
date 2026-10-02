@@ -23,6 +23,18 @@ export interface SavedPlace {
   tags?: string[];
 }
 
+/** 휴지통에 옮겨진 장소 (복원 가능) */
+export interface TrashedPlace {
+  place: SavedPlace;
+  deletedAt: number; // 휴지통으로 옮긴 시각 (ms)
+}
+
+/** 토스트에 붙는 선택 액션 (예: 삭제 후 "실행 취소") */
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export type AccuracyLevel = 'excellent' | 'good' | 'fair' | 'poor';
 
 export interface AccuracyInfo {

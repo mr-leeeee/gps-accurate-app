@@ -57,7 +57,7 @@
 | 프론트엔드 | React 19, TypeScript 6, TailwindCSS 4 |
 | 빌드 | Vite 8 |
 | 모바일 | Capacitor 8 (하이브리드 Android) |
-| 지도 | Leaflet + OpenStreetMap |
+| 지도 | Leaflet + VWorld(브이월드) / OpenStreetMap |
 | 테스트 | Vitest 5 |
 | 패키지 매니저 | pnpm |
 
@@ -164,6 +164,7 @@ gps/
 | `VITE_DEFAULT_LATITUDE` | 기본 위도 | 37.566535 |
 | `VITE_DEFAULT_LONGITUDE` | 기본 경도 | 126.977969 |
 | `VITE_GHOST_MODE` | 테스트 도구 활성화 (`.env.ghost`에서 `1`로 설정) | 미설정 |
+| `VITE_VWORLD_TILE_KEY` | VWorld 인증키. 미설정 시 OSM 기본 타일로 폴백 | 미설정 |
 
 ---
 
@@ -214,7 +215,8 @@ MIT License
 
 ## 감사의 말
 
-- [OpenStreetMap](https://www.openstreetmap.org/) — 지도 데이터
+- [브이월드](https://www.vworld.kr/) — 국내 지도 데이터 (VWorld 인증키 사용 시)
+- [OpenStreetMap](https://www.openstreetmap.org/) — 지도 데이터 (폴백)
 - [Nominatim](https://nominatim.openstreetmap.org/) — 주소 검색 API
 - [OSRM](http://project-osrm.org/) — 경로 계산 API
 - [Capacitor](https://capacitorjs.com/) — 하이브리드 모바일 프레임워크

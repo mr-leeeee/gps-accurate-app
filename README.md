@@ -34,7 +34,11 @@
 ### 4. 네비게이션 연동
 - **카카오맵** — 길안내 바로 실행
 - **네이버 지도** — 길안내 바로 실행
+- **티맵(TMAP)** — 길안내 바로 실행
 - **구글 지도** — 길안내 바로 실행
+- **Realdex** — 현재 좌표 주변 아파트 실거래가 지도 바로 열기
+  - 주소는 함께 클립보드에 복사되어, Realdex의 '도로명 주소 검색' 칸에 붙여넣으면
+    해당 위치 단지로 정확히 이동할 수 있습니다
 - 위치 정보 클립보드 복사
 - 카카오톡/메신저 공유
 
@@ -276,6 +280,7 @@ MIT License
 - [OpenStreetMap](https://www.openstreetmap.org/) — 지도 데이터 (폴백)
 - [Nominatim](https://nominatim.openstreetmap.org/) — 주소 검색 API
 - [OSRM](http://project-osrm.org/) — 경로 계산 API
+- [Realdex](https://www.realdex.kr/) — 아파트 실거래가 지도 (링크 연동, 데이터 직접 조회 없음)
 - [Capacitor](https://capacitorjs.com/) — 하이브리드 모바일 프레임워크
 - [Leaflet](https://leafletjs.com/) — 지도 라이브러리
 

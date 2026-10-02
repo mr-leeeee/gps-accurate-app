@@ -1,18 +1,28 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { LocationData, SavedPlace } from '../types/location';
+import type { LocationData, SavedPlace, ToastAction, TrashedPlace } from '../types/location';
 import {
   getSavedPlaces,
   savePlace,
   updatePlace,
   deletePlace,
   clearAllPlaces,
+  getTrash,
+  restoreFromTrash,
+  restoreAllFromTrash,
+  deleteFromTrashPermanently,
+  emptyTrash,
+  importPlacesFromJSON,
+  exportPlacesToJSON,
 } from '../services/storageService';
+import { exportBackup } from '../services/backupService';
 import { copyLocationText, shareLocation } from '../services/navigationService';
 import { calculateDrivingRoute, formatDistance, formatDuration } from '../services/routeService';
 import { logger } from '../utils/logger';
+import { AppError } from '../types/errors';
 
 interface UsePlaceManagementReturn {
   savedPlaces: SavedPlace[];
+  trash: TrashedPlace[];
   selectedPlace: SavedPlace | null;
   editingPlace: SavedPlace | null;
   navigatingPlace: SavedPlace | null;
@@ -28,21 +38,28 @@ interface UsePlaceManagementReturn {
   handleSaveEditedPlace: (id: string, newName: string, newMemo?: string) => void;
   handleDeletePlace: (id: string) => void;
   handleClearAllPlaces: () => void;
+  handleRestorePlace: (id: string) => void;
+  handleRestoreAllFromTrash: () => void;
+  handleDeleteFromTrashPermanently: (id: string) => void;
+  handleEmptyTrash: () => void;
+  handleImportBackup: (json: string) => boolean;
+  handleExportBackup: () => Promise<void>;
   handleCopyCurrentLocation: (currentLocation: LocationData) => Promise<void>;
   handleNavigatePlace: (place: SavedPlace) => void;
   handleSharePlace: (place: SavedPlace) => Promise<void>;
   handleAddCustomPlace: (place: SavedPlace) => void;
   handleRouteToPlace: (place: SavedPlace, currentLocation: LocationData) => Promise<void>;
   handleClearRoute: () => void;
-  showToast: (msg: string) => void;
+  showToast: (msg: string, action?: ToastAction) => void;
 }
 
 interface UsePlaceManagementProps {
-  showToast: (msg: string) => void;
+  showToast: (msg: string, action?: ToastAction) => void;
 }
 
 export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UsePlaceManagementReturn {
   const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([]);
+  const [trash, setTrash] = useState<TrashedPlace[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<SavedPlace | null>(null);
   const [editingPlace, setEditingPlace] = useState<SavedPlace | null>(null);
   const [navigatingPlace, setNavigatingPlace] = useState<SavedPlace | null>(null);
@@ -53,6 +70,7 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
   useEffect(() => {
     const places = getSavedPlaces();
     setSavedPlaces(places);
+    setTrash(getTrash());
   }, []);
 
   const handleSaveCurrentPlace = useCallback((currentLocation: LocationData) => {
@@ -97,20 +115,112 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
     showToast('장소 정보가 성공적으로 변경되었습니다.');
   }, [showToast]);
 
-  const handleDeletePlace = useCallback((id: string) => {
-    const updated = deletePlace(id);
-    setSavedPlaces(updated);
-    if (selectedPlace?.id === id) {
-      setSelectedPlace(null);
-    }
-    showToast('장소가 목록에서 삭제되었습니다.');
-  }, [selectedPlace?.id, showToast]);
+  const handleRestorePlace = useCallback(
+    (id: string) => {
+      setSavedPlaces(restoreFromTrash(id));
+      setTrash(getTrash());
+      showToast('장소를 목록으로 되돌렸습니다.');
+    },
+    [showToast]
+  );
+
+  const handleDeletePlace = useCallback(
+    (id: string) => {
+      const target = savedPlaces.find((place) => place.id === id);
+      const name = target?.customName ?? '장소';
+
+      setSavedPlaces(deletePlace(id));
+      setTrash(getTrash());
+      if (selectedPlace?.id === id) {
+        setSelectedPlace(null);
+      }
+
+      showToast(`'${name}' 삭제됨. 휴지통에서 복원할 수 있습니다.`, {
+        label: '되돌리기',
+        onClick: () => handleRestorePlace(id),
+      });
+    },
+    [savedPlaces, selectedPlace?.id, showToast, handleRestorePlace]
+  );
 
   const handleClearAllPlaces = useCallback(() => {
-    const updated = clearAllPlaces();
-    setSavedPlaces(updated);
+    const count = savedPlaces.length;
+    setSavedPlaces(clearAllPlaces());
+    setTrash(getTrash());
     setSelectedPlace(null);
-    showToast('모든 장소 목록이 삭제되었습니다.');
+
+    if (count === 0) {
+      showToast('저장된 장소가 없습니다.');
+      return;
+    }
+
+    showToast(`${count}개 장소를 휴지통으로 옮겼습니다.`, {
+      label: '전부 되돌리기',
+      onClick: () => {
+        setSavedPlaces(restoreAllFromTrash());
+        setTrash(getTrash());
+        showToast('모든 장소를 되돌렸습니다.');
+      },
+    });
+  }, [savedPlaces.length, showToast]);
+
+  const handleRestoreAllFromTrash = useCallback(() => {
+    const count = trash.length;
+    if (count === 0) return;
+    setSavedPlaces(restoreAllFromTrash());
+    setTrash(getTrash());
+    showToast(`휴지통의 ${count}개 장소를 모두 되돌렸습니다.`);
+  }, [trash.length, showToast]);
+
+  const handleDeleteFromTrashPermanently = useCallback(
+    (id: string) => {
+      setTrash(deleteFromTrashPermanently(id));
+      showToast('휴지통에서 영구 삭제했습니다.');
+    },
+    [showToast]
+  );
+
+  const handleEmptyTrash = useCallback(() => {
+    setTrash(emptyTrash());
+    showToast('휴지통을 모두 비웠습니다.');
+  }, [showToast]);
+
+  const handleImportBackup = useCallback(
+    (json: string) => {
+      try {
+        const updated = importPlacesFromJSON(json);
+        setSavedPlaces(updated);
+        setTrash(getTrash());
+        setSelectedPlace(null);
+        showToast(`백업 파일에서 ${updated.length}개의 장소를 불러왔습니다.`);
+        return true;
+      } catch (err) {
+        logger.error('Failed to import backup', err);
+        showToast('백업 파일 형식이 올바르지 않습니다.');
+        return false;
+      }
+    },
+    [showToast]
+  );
+
+  const handleExportBackup = useCallback(async () => {
+    const json = exportPlacesToJSON();
+    try {
+      const result = await exportBackup(json);
+      const folder = result.folderName ? `${result.folderName} 폴더에 ` : '';
+      showToast(
+        result.shareCompleted
+          ? `${folder}'${result.fileName}' 백업을 저장하고 공유했습니다.`
+          : `${folder}'${result.fileName}'을 저장했습니다. 공유는 건너뛰었습니다.`
+      );
+    } catch (err) {
+      if (err instanceof AppError) {
+        showToast(err.userMessage);
+        return;
+      }
+      logger.error('Failed to export backup', err);
+      showToast('백업 파일을 만들지 못했습니다.');
+    }
   }, [showToast]);
 
   const handleCopyCurrentLocation = useCallback(async (currentLocation: LocationData) => {
@@ -188,6 +298,7 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
 
   return {
     savedPlaces,
+    trash,
     selectedPlace,
     editingPlace,
     navigatingPlace,
@@ -203,6 +314,12 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
     handleSaveEditedPlace,
     handleDeletePlace,
     handleClearAllPlaces,
+    handleRestorePlace,
+    handleRestoreAllFromTrash,
+    handleDeleteFromTrashPermanently,
+    handleEmptyTrash,
+    handleImportBackup,
+    handleExportBackup,
     handleCopyCurrentLocation,
     handleNavigatePlace,
     handleSharePlace,

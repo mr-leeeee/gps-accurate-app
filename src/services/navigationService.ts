@@ -86,6 +86,23 @@ export function openGoogleMap(target: NavigationTarget) {
 }
 
 /**
+ * Realdex 지도에서 현재 좌표 주변을 연다.
+ *
+ * Realdex(map.html)는 검색어를 URL로 받지 않고 전용 입력창으로 받으므로
+ * `?addr=` 같은 파라미터는 서버가 무시한다. 대신 좌표를 넘기면 그 위치가
+ * 중심이 되어 줌16으로 주변 단지 마커가 표시된다.
+ *
+ * `vshot=1`은 Realdex 측 게이트 파라미터다. 이 값이 없으면 좌표를 줘도
+ * 지도가 이동하지 않아 반드시 함께 실어야 한다.
+ */
+export function openRealdex(target: NavigationTarget) {
+  const webUrl =
+    `https://realdex.kr/map.html?vshot=1` +
+    `&vla=${target.latitude}&vlo=${target.longitude}&vz=16`;
+  window.open(webUrl, '_blank');
+}
+
+/**
  * 공급자에 따라 길안내 실행
  */
 export function navigateTo(provider: NavigationProvider, target: NavigationTarget) {

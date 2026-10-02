@@ -6,6 +6,7 @@ import {
   openNaverMap,
   openTMap,
   openGoogleMap,
+  openRealdex,
   shareLocation,
   copyLocationText,
 } from '../services/navigationService';
@@ -22,6 +23,7 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
   onClose,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [realdexCopied, setRealdexCopied] = useState(false);
 
   if (!isOpen || !place) return null;
 
@@ -42,6 +44,23 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
 
   const handleShare = async () => {
     await shareLocation(target);
+  };
+
+  /**
+   * 주소를 클립보드에 먼저 넣어 Realdex '도로명 주소 검색' 칸에 붙여넣을 수 있게 하고,
+   * 그 다음 좌표 중심 지도를 연다. 복사를 먼저 해야 브라우저 전환 뒤에도 값이 남는다.
+   */
+  const handleRealdex = async () => {
+    if (target.address) {
+      try {
+        await navigator.clipboard.writeText(target.address);
+        setRealdexCopied(true);
+        setTimeout(() => setRealdexCopied(false), 4000);
+      } catch {
+        // 클립보드 실패는 무시하고 지도 링크만 연다
+      }
+    }
+    openRealdex(target);
   };
 
   return (
@@ -151,6 +170,35 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
             </div>
             <ExternalLink className="w-4 h-4 text-slate-400" />
           </button>
+        </div>
+
+        {/* Realdex — 아파트 실거래가 */}
+        <div className="space-y-2 mt-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            부동산 실거래가
+          </p>
+          <button
+            onClick={handleRealdex}
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold border border-slate-700 shadow-sm transition active:scale-[0.98]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                R
+              </div>
+              <div className="text-left">
+                <span className="text-sm block">Realdex 지도 열기</span>
+                <span className="text-[11px] font-normal text-slate-400">
+                  {realdexCopied ? '주소 복사됨 · 이 위치 주변 단지 표시' : '이 위치 주변 아파트 실거래가'}
+                </span>
+              </div>
+            </div>
+            <ExternalLink className="w-4 h-4 text-slate-400" />
+          </button>
+          {realdexCopied && (
+            <p className="text-[11px] text-slate-400 px-1">
+              주소가 복사됐습니다. Realdex 지도 상단 '도로명 주소 검색'에 붙여넣으면 해당 위치 단지로 바로 이동합니다.
+            </p>
+          )}
         </div>
 
         {/* 타 어플 및 메신저 전달 (공유 / 복사) */}

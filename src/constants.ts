@@ -23,28 +23,47 @@ export const GHOST_MODE = import.meta.env.VITE_GHOST_MODE === '1';
  */
 export const VWORLD_TILE_KEY = getEnvString('VITE_VWORLD_TILE_KEY', '');
 
+export interface TileLayerConfig {
+  url: string;
+  minZoom: number;
+  maxZoom: number;
+  attribution: string;
+  isVWorld: boolean;
+}
+
+export const OSM_FALLBACK_TILE_LAYER: TileLayerConfig = {
+  url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+  minZoom: 0,
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  isVWorld: false,
+};
+
 /**
- * 기본 지도 레이어
- *
- * 인증키가 있으면 VWorld(국내 관제 데이터), 없으면 OSM 기반 CartoDB로 폴백합니다.
- *
  * 경로 순서는 반드시 `{z}/{y}/{x}` 입니다. VWorld의 tileRow/tileCol이 각각
  * Google 인덱스 Y/X라 Leaflet의 {y}/{x}에 대응하지만, 관례대로
  * `{z}/{x}/{y}`로 바꾸면 404가 되고 지도가 깨집니다. Base 레이어는 zoom 6~19.
  */
-export const BASE_TILE_LAYER = VWORLD_TILE_KEY
-  ? {
-      url: `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_TILE_KEY}/Base/{z}/{y}/{x}.png`,
-      minZoom: 6,
-      maxZoom: 19,
-      attribution: '공간정보 오픈플랫폼(브이월드) · 국토교통부',
-    }
-  : {
-      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      minZoom: 0,
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    };
+export function buildBaseTileLayer(key: string): TileLayerConfig {
+  if (!key) return OSM_FALLBACK_TILE_LAYER;
+  return {
+    url: `https://api.vworld.kr/req/wmts/1.0.0/${key}/Base/{z}/{y}/{x}.png`,
+    minZoom: 6,
+    maxZoom: 19,
+    attribution: '공간정보 오픈플랫폼(브이월드) · 국토교통부',
+    isVWorld: true,
+  };
+}
+
+/** 앱 내 설정에서 입력한 키가 이 빌드타임 값보다 우선한다 */
+export const BASE_TILE_LAYER = buildBaseTileLayer(VWORLD_TILE_KEY);
+
+export const VWORLD_KEY_EXPIRY_WARN_DAYS = 14;
+
+export const VWORLD_LINKS = {
+  portal: 'https://www.vworld.kr/v4po_main.do',
+  signup: 'https://www.vworld.kr/v4po_usrcla_a002.do',
+} as const;
 
 /**
  * GPS 정확도 임계값 (미터)

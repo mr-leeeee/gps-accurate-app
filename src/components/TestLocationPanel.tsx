@@ -4,10 +4,12 @@ import { MOCK_LOCATIONS } from '../constants';
 
 interface TestLocationPanelProps {
   onSetMockLocation: (mock: LocationData) => void;
+  showToast: (msg: string) => void;
 }
 
 export const TestLocationPanel: React.FC<TestLocationPanelProps> = ({
   onSetMockLocation,
+  showToast,
 }) => {
   const handleClick = (mock: (typeof MOCK_LOCATIONS)[number]) => {
     const locationData: LocationData = {
@@ -22,6 +24,7 @@ export const TestLocationPanel: React.FC<TestLocationPanelProps> = ({
       isMock: true,
     };
     onSetMockLocation(locationData);
+    showToast('테스트 위치가 설정되었습니다.');
   };
 
   return (

@@ -8,6 +8,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { validateEnv } from './utils/env';
+import { GHOST_MODE } from './constants';
 import { useLocationManagement } from './hooks/useLocationManagement';
 import { usePlaceManagement } from './hooks/usePlaceManagement';
 import { MapViewer } from './components/MapViewer';
@@ -19,6 +20,7 @@ import { RouteOptimizeModal } from './components/RouteOptimizeModal';
 import { AddAddressModal } from './components/AddAddressModal';
 import { TestLocationPanel } from './components/TestLocationPanel';
 import { InformationModal } from './components/InformationModal';
+import { TrashModal } from './components/TrashModal';
 
 export const App: React.FC = () => {
   validateEnv();
@@ -30,7 +32,9 @@ export const App: React.FC = () => {
     handleMeasureLocation,
     handleSetMockLocation,
     showToast,
+    dismissToast,
     toastMessage,
+    toastAction,
     isLiveTracking,
     toggleLiveTracking,
   } = useLocationManagement();
@@ -38,6 +42,7 @@ export const App: React.FC = () => {
   // 장소 관리 훅
   const {
     savedPlaces,
+    trash,
     selectedPlace,
     editingPlace,
     navigatingPlace,
@@ -53,6 +58,12 @@ export const App: React.FC = () => {
     handleSaveEditedPlace,
     handleDeletePlace,
     handleClearAllPlaces,
+    handleRestorePlace,
+    handleRestoreAllFromTrash,
+    handleDeleteFromTrashPermanently,
+    handleEmptyTrash,
+    handleImportBackup,
+    handleExportBackup,
     handleCopyCurrentLocation,
     handleNavigatePlace,
     handleSharePlace,
@@ -64,6 +75,7 @@ export const App: React.FC = () => {
   // 모달 상태
   const [isRouteModalOpen, setIsRouteModalOpen] = useState<boolean>(false);
   const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState<boolean>(false);
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState<boolean>(false);
   const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [isMobileFrame, setIsMobileFrame] = useState<boolean>(true);
@@ -77,9 +89,20 @@ export const App: React.FC = () => {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-start sm:py-6 sm:px-4 font-sans">
       {/* 토스트 알림 */}
       {toastMessage && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-full bg-slate-900/95 border border-blue-500/50 text-blue-200 text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-short">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          {toastMessage}
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-full bg-slate-900/95 border border-blue-500/50 text-blue-200 text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center gap-2 animate-bounce-short max-w-[92vw]">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="truncate">{toastMessage}</span>
+          {toastAction && (
+            <button
+              onClick={() => {
+                dismissToast();
+                toastAction.onClick();
+              }}
+              className="shrink-0 px-2.5 py-1 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition active:scale-95"
+            >
+              {toastAction.label}
+            </button>
+          )}
         </div>
       )}
 
@@ -163,8 +186,12 @@ export const App: React.FC = () => {
             isCopied={isCopied}
           />
 
-          {/* 테스트용 모의 위치 버튼 */}
-          <TestLocationPanel onSetMockLocation={handleSetMockLocation} />
+          {GHOST_MODE && (
+            <TestLocationPanel
+              onSetMockLocation={handleSetMockLocation}
+              showToast={showToast}
+            />
+          )}
 
           {/* 저장된 장소 목록 & CRUD */}
           <PlaceList
@@ -177,8 +204,25 @@ export const App: React.FC = () => {
             onClearAllPlaces={handleClearAllPlaces}
             onSharePlace={handleSharePlace}
             onRouteToPlace={(place) => currentLocation && handleRouteToPlace(place, currentLocation)}
-            onOpenRouteOptimizer={() => setIsRouteModalOpen(true)}
-            onOpenAddAddressModal={() => setIsAddAddressModalOpen(true)}
+            onOpenRouteOptimizer={() => {
+              showToast('최적 동선 계산 모달을 열었습니다.');
+              setIsRouteModalOpen(true);
+            }}
+            onOpenAddAddressModal={() => {
+              showToast('주소를 직접 입력해 장소를 추가합니다.');
+              setIsAddAddressModalOpen(true);
+            }}
+            onOpenTrash={() => {
+              showToast(
+                trash.length > 0
+                  ? `휴지통에 삭제된 장소 ${trash.length}개를 복원할 수 있습니다.`
+                  : '휴지통이 비어 있습니다.'
+              );
+              setIsTrashModalOpen(true);
+            }}
+            onImportBackup={handleImportBackup}
+            onExportBackup={handleExportBackup}
+            trashCount={trash.length}
           />
         </main>
 
@@ -221,6 +265,17 @@ export const App: React.FC = () => {
         isOpen={isAddAddressModalOpen}
         onClose={() => setIsAddAddressModalOpen(false)}
         onAddPlace={handleAddCustomPlace}
+      />
+
+      {/* 모달 5: 삭제된 장소 휴지통 및 복원 모달 */}
+      <TrashModal
+        trash={trash}
+        isOpen={isTrashModalOpen}
+        onClose={() => setIsTrashModalOpen(false)}
+        onRestore={handleRestorePlace}
+        onRestoreAll={handleRestoreAllFromTrash}
+        onDeletePermanently={handleDeleteFromTrashPermanently}
+        onEmptyTrash={handleEmptyTrash}
       />
 
       {/* 사용 방법 가이드 모달 */}

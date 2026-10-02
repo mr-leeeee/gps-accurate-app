@@ -2,6 +2,20 @@ import type { LocationData, SavedPlace } from './types/location';
 import { getEnvNumber } from './utils/env';
 
 /**
+ * 고스트 모드 (개발 전용 기능)
+ *
+ * `pnpm build:ghost` (= VITE_GHOST_MODE=1) 로 빌드할 때만 테스트 도구가
+ * 활성화됩니다. 일반 빌드에서는 Vite가 이 값을 리터럴로 치환해 상수로 만들고,
+ * `GHOST_MODE === false` 분기가 정적으로 제거되어 번들에 코드 자체가 남지 않습니다.
+ *
+ * production에서 제외되는 것:
+ *   - 테스트 위치 패널 (강남역/판교/해운대)
+ *   - 저장 목록 최초 실행 시 샘플 장소 주입
+ *   - GPS 측정 실패 시 기본 좌표(서울시청) 폴백
+ */
+export const GHOST_MODE = import.meta.env.VITE_GHOST_MODE === '1';
+
+/**
  * GPS 정확도 임계값 (미터)
  */
 export const ACCURACY_THRESHOLDS = {
@@ -70,6 +84,11 @@ export const SAMPLE_PLACES: SavedPlace[] = [
  * 토스트 메시지 지속 시간 (밀리초)
  */
 export const TOAST_DURATION = 2800;
+
+/**
+ * 실행 취소 액션이 포함된 토스트의 지속 시간 (밀리초)
+ */
+export const UNDO_TOAST_DURATION = 6000;
 
 /**
  * 복사 완료 상태 지속 시간 (밀리초)

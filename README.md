@@ -43,9 +43,10 @@
 - OSRM API를 통한 도로 주행거리 산출
 - 지도에 경로 표시
 
-### 6. 테스트 위치
+### 6. 테스트 위치 (고스트 모드 전용)
 - 모의 위치 설정 (강남역, 판교, 해운대)
-- 개발/테스트 환경에서 GPS 없이 위치 시뮬레이션
+- `pnpm build:ghost`로 빌드할 때만 활성화되며, 일반 빌드에서는 코드 자체가 번들에 포함되지 않음
+- GPS 실패 시 기본 좌표 표시, 저장 목록 최초 실행 시 샘플 장소 주입도 고스트 모드 전용
 
 ---
 
@@ -83,8 +84,11 @@ pnpm dev
 ### 빌드
 
 ```bash
-# 웹 빌드
+# 웹 빌드 (배포용 — 테스트 도구 미포함)
 pnpm build
+
+# 고스트 빌드 (테스트 도구 포함 — 실기기 배포 금지)
+pnpm build:ghost
 
 # Android 빌드
 npx cap sync android
@@ -159,6 +163,7 @@ gps/
 | `VITE_OSRM_TIMEOUT` | OSRM 타임아웃 (ms) | 6000 |
 | `VITE_DEFAULT_LATITUDE` | 기본 위도 | 37.566535 |
 | `VITE_DEFAULT_LONGITUDE` | 기본 경도 | 126.977969 |
+| `VITE_GHOST_MODE` | 테스트 도구 활성화 (`.env.ghost`에서 `1`로 설정) | 미설정 |
 
 ---
 

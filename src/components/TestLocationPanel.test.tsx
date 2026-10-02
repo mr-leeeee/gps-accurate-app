@@ -6,7 +6,8 @@ import { MOCK_LOCATIONS } from '../constants';
 describe('TestLocationPanel', () => {
   it('테스트 위치 버튼들을 렌더링한다', () => {
     const onSetMockLocation = vi.fn();
-    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} />);
+    const showToast = vi.fn();
+    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} showToast={showToast} />);
     
     MOCK_LOCATIONS.forEach((mock) => {
       expect(screen.getByText(mock.name)).toBeDefined();
@@ -15,7 +16,8 @@ describe('TestLocationPanel', () => {
 
   it('버튼 클릭 시 올바른 좌표를 전달한다', () => {
     const onSetMockLocation = vi.fn();
-    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} />);
+    const showToast = vi.fn();
+    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} showToast={showToast} />);
     
     const gangnamBtn = screen.getByText('강남역');
     fireEvent.click(gangnamBtn);
@@ -30,7 +32,8 @@ describe('TestLocationPanel', () => {
 
   it('접근성 role="group"이 적용된다', () => {
     const onSetMockLocation = vi.fn();
-    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} />);
+    const showToast = vi.fn();
+    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} showToast={showToast} />);
     
     const group = screen.getByRole('group', { name: '테스트 위치 선택' });
     expect(group).toBeDefined();
@@ -38,7 +41,8 @@ describe('TestLocationPanel', () => {
 
   it('각 버튼에 aria-label이 적용된다', () => {
     const onSetMockLocation = vi.fn();
-    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} />);
+    const showToast = vi.fn();
+    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} showToast={showToast} />);
     
     MOCK_LOCATIONS.forEach((mock) => {
       const btn = screen.getByRole('button', { name: `${mock.name}으로 테스트 위치 설정` });
@@ -48,7 +52,8 @@ describe('TestLocationPanel', () => {
 
   it('세 개의 테스트 위치 버튼이 존재한다', () => {
     const onSetMockLocation = vi.fn();
-    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} />);
+    const showToast = vi.fn();
+    render(<TestLocationPanel onSetMockLocation={onSetMockLocation} showToast={showToast} />);
     
     const buttons = screen.getAllByRole('button');
     expect(buttons.length).toBe(3);

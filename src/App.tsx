@@ -115,7 +115,7 @@ export const App: React.FC = () => {
     none: '인증키 미설정',
     active: '인증키 사용 중',
     expiring:
-      vWorldKeyDaysLeft !== null ? `만료 임박 · ${vWorldKeyDaysLeft}일 남음` : '만료 임박',
+      vWorldKeyDaysLeft !== null ? `인증키 만료 임박 · ${vWorldKeyDaysLeft}일 남음` : '인증키 만료 임박',
     expired: '인증키 만료됨 — OSM 전환',
   };
 

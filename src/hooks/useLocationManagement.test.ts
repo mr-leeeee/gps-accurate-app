@@ -64,7 +64,7 @@ describe('useLocationManagement', () => {
 
     expect(result.current.locationError).toBe('GPS 오류');
     expect(result.current.isLoadingLocation).toBe(false);
-    expect(result.current.currentLocation).not.toBeNull();
+    expect(result.current.currentLocation).toBeNull();
   });
 
   it('handleSetMockLocation이 모의 위치를 설정한다', () => {

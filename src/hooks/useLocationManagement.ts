@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { LocationData } from '../types/location';
+import type { LocationData, ToastAction } from '../types/location';
 import { GeolocationError } from '../types/errors';
 import { fetchCurrentPosition } from '../services/locationService';
 import { logger } from '../utils/logger';
-import { DEFAULT_LOCATION, TOAST_DURATION } from '../constants';
+import { DEFAULT_LOCATION, GHOST_MODE, TOAST_DURATION, UNDO_TOAST_DURATION } from '../constants';
 
 interface UseLocationManagementReturn {
   currentLocation: LocationData | null;
@@ -11,8 +11,10 @@ interface UseLocationManagementReturn {
   locationError: string | null;
   handleMeasureLocation: () => Promise<void>;
   handleSetMockLocation: (mock: LocationData) => void;
-  showToast: (msg: string) => void;
+  showToast: (msg: string, action?: ToastAction) => void;
+  dismissToast: () => void;
   toastMessage: string | null;
+  toastAction: ToastAction | null;
   isLiveTracking: boolean;
   toggleLiveTracking: () => void;
 }
@@ -22,19 +24,34 @@ export function useLocationManagement(): UseLocationManagementReturn {
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastAction, setToastAction] = useState<ToastAction | null>(null);
   const [isLiveTracking, setIsLiveTracking] = useState<boolean>(false);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
-  const showToast = useCallback((msg: string) => {
+  const showToast = useCallback((msg: string, action?: ToastAction) => {
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }
     setToastMessage(msg);
-    toastTimeoutRef.current = setTimeout(() => {
-      setToastMessage(null);
+    setToastAction(action ?? null);
+    toastTimeoutRef.current = setTimeout(
+      () => {
+        setToastMessage(null);
+        setToastAction(null);
+        toastTimeoutRef.current = null;
+      },
+      action ? UNDO_TOAST_DURATION : TOAST_DURATION
+    );
+  }, []);
+
+  const dismissToast = useCallback(() => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
       toastTimeoutRef.current = null;
-    }, TOAST_DURATION);
+    }
+    setToastMessage(null);
+    setToastAction(null);
   }, []);
 
   const handleMeasureLocation = useCallback(async () => {
@@ -61,12 +78,7 @@ export function useLocationManagement(): UseLocationManagementReturn {
       
       setLocationError(message);
 
-      setCurrentLocation((prev) => {
-        if (!prev) {
-          return DEFAULT_LOCATION;
-        }
-        return prev;
-      });
+      setCurrentLocation((prev) => (GHOST_MODE && !prev ? DEFAULT_LOCATION : prev));
     } finally {
       setIsLoadingLocation(false);
     }
@@ -74,8 +86,7 @@ export function useLocationManagement(): UseLocationManagementReturn {
 
   const handleSetMockLocation = useCallback((mock: LocationData) => {
     setCurrentLocation(mock);
-    showToast('테스트 위치가 설정되었습니다.');
-  }, [showToast]);
+  }, []);
 
   // 실시간 추적 토글 함수
   const toggleLiveTracking = useCallback(() => {
@@ -150,7 +161,9 @@ export function useLocationManagement(): UseLocationManagementReturn {
     handleMeasureLocation,
     handleSetMockLocation,
     showToast,
+    dismissToast,
     toastMessage,
+    toastAction,
     isLiveTracking,
     toggleLiveTracking,
   };

@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 import { logger } from '../utils/logger';
 
 export type NavigationProvider = 'kakao' | 'naver' | 'tmap' | 'google';
@@ -138,20 +140,39 @@ export async function copyLocationText(place: NavigationTarget): Promise<boolean
   }
 }
 
+/** 사용자가 공유 시트를 닫으면 Share 플러그인이 이 메시지로 거부한다 */
+const SHARE_CANCELED = 'Share canceled';
+
+const isShareCanceled = (err: unknown): boolean =>
+  err instanceof Error && err.message === SHARE_CANCELED;
+
 /**
  * 스마트폰 시스템 공유 시트 (카카오톡, 문자, 인스타 등 타 앱 전달)
+ *
+ * Android WebView에는 navigator.share/canShare가 존재하지 않는다. 따라서 네이티브에서는
+ * Capacitor Share 플러그인을 먼저 사용하고, 웹 브라우저에서만 Web Share API를 쓴다.
  */
 export async function shareLocation(place: NavigationTarget): Promise<boolean> {
   const kakaoLink = `https://map.kakao.com/link/to/${encodeURIComponent(place.name)},${place.latitude},${place.longitude}`;
-  const shareData = {
-    title: `[위치 공유] ${place.name}`,
-    text: `📍 위치: ${place.name}\n주소: ${place.address || '위성 좌표'}\n좌표: (${place.latitude.toFixed(6)}, ${place.longitude.toFixed(6)})`,
-    url: kakaoLink,
-  };
+  const title = `[위치 공유] ${place.name}`;
+  const text = `📍 위치: ${place.name}\n주소: ${place.address || '위성 좌표'}\n좌표: (${place.latitude.toFixed(6)}, ${place.longitude.toFixed(6)})\n카카오맵: ${kakaoLink}`;
 
-  if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+  if (Capacitor.isNativePlatform()) {
     try {
-      await navigator.share(shareData);
+      await Share.share({ title, text, dialogTitle: '위치 공유' });
+      return true;
+    } catch (err) {
+      if (isShareCanceled(err)) {
+        return false;
+      }
+      logger.warn('Native share failed, falling back to clipboard', err);
+      return copyLocationText(place);
+    }
+  }
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url: kakaoLink });
       return true;
     } catch (e) {
       if (e instanceof Error && e.name !== 'AbortError') {
@@ -159,8 +180,7 @@ export async function shareLocation(place: NavigationTarget): Promise<boolean> {
       }
       return false;
     }
-  } else {
-    // navigator.share가 지원되지 않는 환경에서는 클립보드 복사로 대체
-    return copyLocationText(place);
   }
+
+  return copyLocationText(place);
 }

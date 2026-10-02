@@ -132,17 +132,31 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       map.removeLayer(baseLayerRef.current);
     }
 
-    const layer = L.tileLayer(tileConfig.url, {
+    baseLayerRef.current = L.tileLayer(tileConfig.url, {
       attribution: tileConfig.attribution,
       minZoom: tileConfig.minZoom,
       maxZoom: tileConfig.maxZoom,
     });
-    baseLayerRef.current = layer;
+  }, [tileConfig]);
 
-    if (!isSatellite) {
-      layer.addTo(map);
+  // 레이어 생성(위 effect)과 표시 여부(이 effect)를 분리한다. 토글할 때마다 base 레이어를
+  // 새로 만들면 타일을 다시 요청하게 되므로 인스턴스는 유지하고 add/remove만 한다.
+  // tileConfig가 바뀌면 이 effect도 재실행되어 새 base 레이어의 노출 상태를 맞춰준다.
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const base = baseLayerRef.current;
+    const satellite = satelliteLayerRef.current;
+
+    if (isSatellite) {
+      if (base) map.removeLayer(base);
+      if (satellite) satellite.addTo(map);
+    } else {
+      if (satellite) map.removeLayer(satellite);
+      if (base) base.addTo(map);
     }
-  }, [tileConfig, isSatellite]);
+  }, [isSatellite, tileConfig]);
 
   // 레이어 전환 함수
   const toggleLayer = () => {

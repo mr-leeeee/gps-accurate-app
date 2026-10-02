@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# API 키 등 민감값 — 절대 커밋 금지
+.env.local
+.env.*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

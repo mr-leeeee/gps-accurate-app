@@ -6,7 +6,7 @@ import {
   openNaverMap,
   openTMap,
   openGoogleMap,
-  openRealdex,
+  openRealdexWithAddress,
   shareLocation,
   copyLocationText,
 } from '../services/navigationService';
@@ -51,16 +51,11 @@ export const NavigationModal: React.FC<NavigationModalProps> = ({
    * 그 다음 좌표 중심 지도를 연다. 복사를 먼저 해야 브라우저 전환 뒤에도 값이 남는다.
    */
   const handleRealdex = async () => {
-    if (target.address) {
-      try {
-        await navigator.clipboard.writeText(target.address);
-        setRealdexCopied(true);
-        setTimeout(() => setRealdexCopied(false), 4000);
-      } catch {
-        // 클립보드 실패는 무시하고 지도 링크만 연다
-      }
+    const copied = await openRealdexWithAddress(target);
+    if (copied) {
+      setRealdexCopied(true);
+      setTimeout(() => setRealdexCopied(false), 4000);
     }
-    openRealdex(target);
   };
 
   return (

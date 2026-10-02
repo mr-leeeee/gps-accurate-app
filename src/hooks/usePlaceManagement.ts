@@ -15,7 +15,7 @@ import {
   exportPlacesToJSON,
 } from '../services/storageService';
 import { exportBackup } from '../services/backupService';
-import { copyLocationText, shareLocation } from '../services/navigationService';
+import { copyLocationText, shareLocation, openRealdexWithAddress } from '../services/navigationService';
 import { calculateDrivingRoute, formatDistance, formatDuration } from '../services/routeService';
 import { logger } from '../utils/logger';
 import { AppError } from '../types/errors';
@@ -29,6 +29,7 @@ interface UsePlaceManagementReturn {
   routeCoordinates: [number, number][];
   stopOrders: Record<string, number>;
   isCopied: boolean;
+  isRealdexCopied: boolean;
   setSelectedPlace: (place: SavedPlace | null) => void;
   setEditingPlace: (place: SavedPlace | null) => void;
   setNavigatingPlace: (place: SavedPlace | null) => void;
@@ -45,6 +46,7 @@ interface UsePlaceManagementReturn {
   handleImportBackup: (json: string) => boolean;
   handleExportBackup: () => Promise<void>;
   handleCopyCurrentLocation: (currentLocation: LocationData) => Promise<void>;
+  handleOpenRealdex: (currentLocation: LocationData) => void;
   handleNavigatePlace: (place: SavedPlace) => void;
   handleSharePlace: (place: SavedPlace) => Promise<void>;
   handleAddCustomPlace: (place: SavedPlace) => void;
@@ -66,6 +68,7 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
   const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
   const [stopOrders, setStopOrders] = useState<Record<string, number>>({});
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [isRealdexCopied, setIsRealdexCopied] = useState<boolean>(false);
 
   useEffect(() => {
     const places = getSavedPlaces();
@@ -238,6 +241,23 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
     }
   }, [showToast]);
 
+  const handleOpenRealdex = useCallback(
+    async (currentLocation: LocationData) => {
+      const copied = await openRealdexWithAddress({
+        name: '현재 측정 위치',
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        address: currentLocation.address,
+      });
+      if (copied) {
+        setIsRealdexCopied(true);
+        showToast('주소가 복사됐습니다. Realdex 지도에서 붙여넣으면 해당 단지로 이동합니다.');
+        setTimeout(() => setIsRealdexCopied(false), 4000);
+      }
+    },
+    [showToast]
+  );
+
   const handleNavigatePlace = useCallback((place: SavedPlace) => {
     setNavigatingPlace(place);
   }, []);
@@ -305,6 +325,7 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
     routeCoordinates,
     stopOrders,
     isCopied,
+    isRealdexCopied,
     setSelectedPlace,
     setEditingPlace,
     setNavigatingPlace,
@@ -321,6 +342,7 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
     handleImportBackup,
     handleExportBackup,
     handleCopyCurrentLocation,
+    handleOpenRealdex,
     handleNavigatePlace,
     handleSharePlace,
     handleAddCustomPlace,

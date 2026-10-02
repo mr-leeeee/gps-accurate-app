@@ -60,6 +60,7 @@ export const App: React.FC = () => {
     routeCoordinates,
     stopOrders,
     isCopied,
+    isRealdexCopied,
     setSelectedPlace,
     setEditingPlace,
     setNavigatingPlace,
@@ -76,6 +77,7 @@ export const App: React.FC = () => {
     handleImportBackup,
     handleExportBackup,
     handleCopyCurrentLocation,
+    handleOpenRealdex,
     handleNavigatePlace,
     handleSharePlace,
     handleAddCustomPlace,
@@ -235,6 +237,8 @@ export const App: React.FC = () => {
             onSaveLocation={() => currentLocation && handleSaveCurrentPlace(currentLocation)}
             onCopyLocation={() => currentLocation && handleCopyCurrentLocation(currentLocation)}
             isCopied={isCopied}
+            onOpenRealdex={() => currentLocation && handleOpenRealdex(currentLocation)}
+            isRealdexCopied={isRealdexCopied}
           />
 
           {GHOST_MODE && (

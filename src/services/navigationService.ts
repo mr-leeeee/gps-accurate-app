@@ -103,6 +103,26 @@ export function openRealdex(target: NavigationTarget) {
 }
 
 /**
+ * 주소를 클립보드에 넣고 Realdex 지도를 연다. 복사 성공 여부를 반환한다.
+ *
+ * 순서가 중요하다. 브라우저로 전환되면 원본 탭이 백그라운드로 내려가 클립보드
+ * 쓰기가 거부될 수 있으므로, 열기 전에 복사를 끝내야 한다.
+ */
+export async function openRealdexWithAddress(target: NavigationTarget): Promise<boolean> {
+  let copied = false;
+  if (target.address) {
+    try {
+      await navigator.clipboard.writeText(target.address);
+      copied = true;
+    } catch (err) {
+      logger.warn('Failed to copy address for Realdex', err);
+    }
+  }
+  openRealdex(target);
+  return copied;
+}
+
+/**
  * 공급자에 따라 길안내 실행
  */
 export function navigateTo(provider: NavigationProvider, target: NavigationTarget) {

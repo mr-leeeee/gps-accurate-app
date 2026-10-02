@@ -1,4 +1,4 @@
-import { Crosshair, Save, Copy, Check, Compass, ShieldAlert, Sparkles } from 'lucide-react';
+import { Crosshair, Save, Copy, Check, Compass, ShieldAlert, Sparkles, ExternalLink } from 'lucide-react';
 import type { LocationData } from '../types/location';
 import { getAccuracyInfo } from '../services/locationService';
 
@@ -10,6 +10,8 @@ interface CurrentLocationCardProps {
   onSaveLocation: () => void;
   onCopyLocation: () => void;
   isCopied: boolean;
+  onOpenRealdex: () => void;
+  isRealdexCopied: boolean;
 }
 
 export const CurrentLocationCard: React.FC<CurrentLocationCardProps> = ({
@@ -20,6 +22,8 @@ export const CurrentLocationCard: React.FC<CurrentLocationCardProps> = ({
   onSaveLocation,
   onCopyLocation,
   isCopied,
+  onOpenRealdex,
+  isRealdexCopied,
 }) => {
   const accuracyInfo = location ? getAccuracyInfo(location.accuracy) : null;
 
@@ -163,6 +167,27 @@ export const CurrentLocationCard: React.FC<CurrentLocationCardProps> = ({
               </button>
             </div>
           </div>
+
+          <button
+            onClick={onOpenRealdex}
+            aria-label="Realdex에서 현재 위치 주변 아파트 실거래가 보기"
+            className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-900/80 border border-slate-700/40 active:scale-[0.98] transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+          >
+            <span className="flex items-center gap-2.5 min-w-0">
+              <span className="w-7 h-7 shrink-0 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">
+                R
+              </span>
+              <span className="text-left min-w-0">
+                <span className="block text-xs font-bold text-slate-100">Realdex 실거래가 보기</span>
+                <span className="block text-[11px] text-slate-400 truncate">
+                  {isRealdexCopied
+                    ? '주소 복사됨 — 지도에서 붙여넣으면 해당 단지'
+                    : '현재 위치 주변 아파트 거래 확인'}
+                </span>
+              </span>
+            </span>
+            <ExternalLink className="w-4 h-4 shrink-0 text-slate-400" aria-hidden="true" />
+          </button>
         </div>
       ) : (
         /* 위치를 아직 측정하지 않았을 때의 안내 카드 */

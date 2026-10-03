@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { copyLocationText, shareLocation, navigateTo } from './navigationService';
+import { copyLocationText, shareLocation, navigateTo, openRealdex, openRealdexWithAddress } from './navigationService';
 
 const mockTarget = {
   name: '테스트 장소',
@@ -61,5 +61,64 @@ describe('navigationService', () => {
   it('navigateTo - kakao 호출 시 에러 없음', () => {
     vi.stubGlobal('window', { open: vi.fn(), location: { href: '' } });
     expect(() => navigateTo('kakao', mockTarget)).not.toThrow();
+  });
+
+  it('openRealdex - vshot 게이트와 좌표를 담은 URL을 연다', () => {
+    const open = vi.fn();
+    vi.stubGlobal('window', { open });
+
+    openRealdex(mockTarget);
+
+    expect(open).toHaveBeenCalledWith(
+      'https://realdex.kr/map.html?vshot=1&vla=37.50005&vlo=127.0365&vz=16',
+      '_blank'
+    );
+  });
+
+  it('openRealdexWithAddress - 주소를 먼저 복사한 뒤 지도를 열고 true 반환', async () => {
+    const order: string[] = [];
+    const writeText = vi.fn().mockImplementation(async () => {
+      order.push('copy');
+    });
+    const open = vi.fn().mockImplementation(() => {
+      order.push('open');
+    });
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    vi.stubGlobal('window', { open });
+
+    const result = await openRealdexWithAddress(mockTarget);
+
+    expect(result).toBe(true);
+    expect(writeText).toHaveBeenCalledWith(mockTarget.address);
+    expect(order).toEqual(['copy', 'open']);
+  });
+
+  it('openRealdexWithAddress - 복사 실패 시에도 지도는 열고 false 반환', async () => {
+    const open = vi.fn();
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    });
+    vi.stubGlobal('window', { open });
+
+    const result = await openRealdexWithAddress(mockTarget);
+
+    expect(result).toBe(false);
+    expect(open).toHaveBeenCalled();
+  });
+
+  it('openRealdexWithAddress - 주소가 없으면 복사 없이 지도를 연다', async () => {
+    const writeText = vi.fn();
+    const open = vi.fn();
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    vi.stubGlobal('window', { open });
+
+    const result = await openRealdexWithAddress({
+      ...mockTarget,
+      address: undefined,
+    });
+
+    expect(result).toBe(false);
+    expect(writeText).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalled();
   });
 });

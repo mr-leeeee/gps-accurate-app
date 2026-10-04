@@ -111,6 +111,16 @@ export const PlaceList: React.FC<PlaceListProps> = ({
     }
   };
 
+  const handleDeleteOne = (place: SavedPlace) => {
+    if (
+      window.confirm(
+        `'${place.customName}'을(를) 삭제할까요?\n휴지통에서 되돌릴 수 있습니다.`
+      )
+    ) {
+      onDeletePlace(place.id);
+    }
+  };
+
   return (
     <div className="bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-slate-700/70">
       {/* 목록 툴바 - 아이콘 + 개수 배지 */}
@@ -259,7 +269,7 @@ export const PlaceList: React.FC<PlaceListProps> = ({
                   onSelect={() => onSelectPlace(place)}
                   onNavigate={() => onNavigatePlace(place)}
                   onEdit={() => onEditPlace(place)}
-                  onDelete={() => onDeletePlace(place.id)}
+                  onDelete={() => handleDeleteOne(place)}
                   onShare={() => onSharePlace(place)}
                   onRouteToThis={() => onRouteToPlace?.(place)}
                 />

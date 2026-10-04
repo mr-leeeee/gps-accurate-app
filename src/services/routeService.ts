@@ -1,5 +1,5 @@
 import type { SavedPlace } from '../types/location';
-import { NetworkError } from '../types/errors';
+import { AppError, NetworkError } from '../types/errors';
 import { logger } from '../utils/logger';
 import { getEnvNumber } from '../utils/env';
 
@@ -28,6 +28,39 @@ export interface MultiRouteResult {
   totalDurationSeconds: number;
   orderedStops: OptimizedStop[];
   allCoordinates: [number, number][];
+}
+
+export const MAX_OPTIMIZE_STOPS = 20;
+
+const ROUTE_LEG_CONCURRENCY = 4;
+
+const legCache = new Map<string, RouteResult>();
+
+function legKey(a: RoutePoint, b: RoutePoint): string {
+  const r = (n: number) => n.toFixed(5);
+  return `${r(a.latitude)},${r(a.longitude)}>${r(b.latitude)},${r(b.longitude)}`;
+}
+
+export function clearRouteLegCache(): void {
+  legCache.clear();
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const workerCount = Math.min(Math.max(limit, 1), items.length);
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }
 
 /**
@@ -65,6 +98,10 @@ export async function calculateDrivingRoute(
   const endCoord = `${end.longitude},${end.latitude}`;
   const url = `https://router.project-osrm.org/route/v1/driving/${startCoord};${endCoord}?overview=full&geometries=geojson`;
 
+  const cacheKey = legKey(start, end);
+  const cached = legCache.get(cacheKey);
+  if (cached) return cached;
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), getEnvNumber('VITE_OSRM_TIMEOUT', 6000));
@@ -86,12 +123,14 @@ export async function calculateDrivingRoute(
       (c: [number, number]) => [c[1], c[0]]
     );
 
-    return {
+    const result: RouteResult = {
       distanceMeters: route.distance,
       durationSeconds: route.duration,
       coordinates,
       summary: route.legs?.[0]?.summary || '',
     };
+    legCache.set(cacheKey, result);
+    return result;
   } catch (err) {
     logger.warn('OSRM route failed, using straight-line fallback', err);
     // 대체: 하버사인 직선 거리 및 시속 30km 기준 추정치
@@ -158,6 +197,15 @@ export async function optimizeMultiStops(
     };
   }
 
+  if (placesToVisit.length > MAX_OPTIMIZE_STOPS) {
+    throw new AppError(
+      `Too many stops: ${placesToVisit.length}`,
+      'TOO_MANY_STOPS',
+      `경유지는 최대 ${MAX_OPTIMIZE_STOPS}개까지 계산할 수 있습니다. 선택을 줄여주세요.`,
+      true
+    );
+  }
+
   if (placesToVisit.length === 1) {
     const single = placesToVisit[0];
     const route = await calculateDrivingRoute(start, {
@@ -179,25 +227,17 @@ export async function optimizeMultiStops(
     };
   }
 
-  // 외판원 순회 (TSP) 탐욕 알고리즘 (가장 가까운 미방문 지점 순차 선택)
   const remaining = [...placesToVisit];
-  const orderedStops: OptimizedStop[] = [];
-  let currentPos: RoutePoint = { ...start };
-  let allCoordinates: [number, number][] = [];
-  let totalDistanceMeters = 0;
-  let totalDurationSeconds = 0;
-
-  let orderCounter = 1;
-
+  const ordered: SavedPlace[] = [];
+  let cursor: RoutePoint = { ...start };
   while (remaining.length > 0) {
-    // 현재 위치에서 가장 가까운 장소 탐색
     let bestIndex = 0;
     let minDistance = Infinity;
 
     for (let i = 0; i < remaining.length; i++) {
       const dist = calculateHaversineDistance(
-        currentPos.latitude,
-        currentPos.longitude,
+        cursor.latitude,
+        cursor.longitude,
         remaining[i].latitude,
         remaining[i].longitude
       );
@@ -207,29 +247,39 @@ export async function optimizeMultiStops(
       }
     }
 
-    const nextPlace = remaining.splice(bestIndex, 1)[0];
+    const [next] = remaining.splice(bestIndex, 1);
+    ordered.push(next);
+    cursor = { latitude: next.latitude, longitude: next.longitude };
+  }
 
-    // 실제 도로 주행 경로 계산
-    const route = await calculateDrivingRoute(currentPos, {
-      latitude: nextPlace.latitude,
-      longitude: nextPlace.longitude,
-    });
+  const legs: Array<[RoutePoint, RoutePoint]> = [];
+  let prev: RoutePoint = { ...start };
+  for (const p of ordered) {
+    const cur: RoutePoint = { latitude: p.latitude, longitude: p.longitude };
+    legs.push([prev, cur]);
+    prev = cur;
+  }
+  const routes = await mapWithConcurrency(
+    legs,
+    ROUTE_LEG_CONCURRENCY,
+    ([a, b]) => calculateDrivingRoute(a, b)
+  );
 
+  const orderedStops: OptimizedStop[] = [];
+  let allCoordinates: [number, number][] = [];
+  let totalDistanceMeters = 0;
+  let totalDurationSeconds = 0;
+  for (let i = 0; i < ordered.length; i++) {
+    const route = routes[i];
     totalDistanceMeters += route.distanceMeters;
     totalDurationSeconds += route.durationSeconds;
     allCoordinates = [...allCoordinates, ...route.coordinates];
-
     orderedStops.push({
-      place: nextPlace,
-      order: orderCounter++,
+      place: ordered[i],
+      order: i + 1,
       distanceFromPrevMeters: route.distanceMeters,
       durationFromPrevSeconds: route.durationSeconds,
     });
-
-    currentPos = {
-      latitude: nextPlace.latitude,
-      longitude: nextPlace.longitude,
-    };
   }
 
   return {

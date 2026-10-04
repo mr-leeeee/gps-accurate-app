@@ -14,8 +14,10 @@ import {
   optimizeMultiStops,
   formatDistance,
   formatDuration,
+  MAX_OPTIMIZE_STOPS,
 } from '../services/routeService';
 import type { MultiRouteResult } from '../services/routeService';
+import { AppError } from '../types/errors';
 import { openKakaoMap, openMultiStopNavigation } from '../services/navigationService';
 
 interface RouteOptimizeModalProps {
@@ -69,6 +71,12 @@ export const RouteOptimizeModal: React.FC<RouteOptimizeModalProps> = ({
       alert('최적 동선을 계산할 장소를 최소 1곳 이상 선택해 주세요.');
       return;
     }
+    if (placesToOptimize.length > MAX_OPTIMIZE_STOPS) {
+      alert(
+        `경유지는 최대 ${MAX_OPTIMIZE_STOPS}개까지 계산할 수 있습니다. 선택을 줄여주세요.`
+      );
+      return;
+    }
 
     setIsCalculating(true);
     try {
@@ -82,7 +90,11 @@ export const RouteOptimizeModal: React.FC<RouteOptimizeModalProps> = ({
       setRouteResult(res);
     } catch (err) {
       console.error('Route calculation failed', err);
-      alert('경로 계산에 실패했습니다. 다시 시도해 주세요.');
+      alert(
+        err instanceof AppError
+          ? err.userMessage
+          : '경로 계산에 실패했습니다. 다시 시도해 주세요.'
+      );
     } finally {
       setIsCalculating(false);
     }
@@ -184,9 +196,19 @@ export const RouteOptimizeModal: React.FC<RouteOptimizeModalProps> = ({
           </div>
 
           {/* 계산 버튼 */}
+          {selectedIds.length > MAX_OPTIMIZE_STOPS && (
+            <p className="text-[11px] text-rose-400" role="alert">
+              경유지는 최대 {MAX_OPTIMIZE_STOPS}개까지 계산할 수 있습니다. 선택을
+              줄여주세요.
+            </p>
+          )}
           <button
             onClick={handleOptimize}
-            disabled={isCalculating || selectedIds.length === 0}
+            disabled={
+              isCalculating ||
+              selectedIds.length === 0 ||
+              selectedIds.length > MAX_OPTIMIZE_STOPS
+            }
             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg flex items-center justify-center gap-2 active:scale-95 transition disabled:opacity-50"
           >
             <Sparkles className={`w-4 h-4 ${isCalculating ? 'animate-spin' : ''}`} />

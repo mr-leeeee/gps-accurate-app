@@ -163,7 +163,6 @@ export const CurrentLocationCard: React.FC<CurrentLocationCardProps> = ({
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-800"
               >
                 <Save className="w-4 h-4" aria-hidden="true" />
-                장소 목록에 저장
               </button>
             </div>
           </div>

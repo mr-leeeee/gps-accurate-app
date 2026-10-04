@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Search,
   MapPin,
@@ -53,6 +53,7 @@ export const PlaceList: React.FC<PlaceListProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<'newest' | 'name' | 'distance'>('newest');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredPlaces = places.filter(
@@ -62,7 +63,23 @@ export const PlaceList: React.FC<PlaceListProps> = ({
       (p.memo && p.memo.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const sortedPlaces = [...filteredPlaces].sort((a, b) => {
+  const allTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of places) {
+      for (const t of p.tags ?? []) {
+        counts.set(t, (counts.get(t) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'))
+      .map(([tag]) => tag);
+  }, [places]);
+
+  const tagFilteredPlaces = selectedTag
+    ? filteredPlaces.filter((p) => (p.tags ?? []).includes(selectedTag))
+    : filteredPlaces;
+
+  const sortedPlaces = [...tagFilteredPlaces].sort((a, b) => {
     if (sortMode === 'name') {
       return a.customName.localeCompare(b.customName, 'ko');
     }
@@ -254,6 +271,41 @@ export const PlaceList: React.FC<PlaceListProps> = ({
               거리순{currentLocation ? '' : ' (위치 필요)'}
             </option>
           </select>
+        </div>
+      )}
+
+      {/* 태그 필터 */}
+      {allTags.length > 0 && (
+        <div
+          className="flex gap-1.5 mb-2 overflow-x-auto pb-1"
+          role="group"
+          aria-label="태그 필터"
+        >
+          <button
+            onClick={() => setSelectedTag(null)}
+            aria-pressed={selectedTag === null}
+            className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition active:scale-95 ${
+              selectedTag === null
+                ? 'bg-blue-600 border-blue-500 text-white'
+                : 'bg-slate-900/70 border-slate-700 text-slate-300 hover:border-slate-500'
+            }`}
+          >
+            전체
+          </button>
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+              aria-pressed={selectedTag === tag}
+              className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition active:scale-95 ${
+                selectedTag === tag
+                  ? 'bg-blue-600 border-blue-500 text-white'
+                  : 'bg-slate-900/70 border-slate-700 text-slate-300 hover:border-slate-500'
+              }`}
+            >
+              #{tag}
+            </button>
+          ))}
         </div>
       )}
 

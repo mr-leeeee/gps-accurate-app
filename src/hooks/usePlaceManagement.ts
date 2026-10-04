@@ -37,7 +37,7 @@ interface UsePlaceManagementReturn {
   setRouteCoordinates: (coords: [number, number][]) => void;
   setStopOrders: (orders: Record<string, number>) => void;
   handleSaveCurrentPlace: (currentLocation: LocationData) => void;
-  handleSaveEditedPlace: (id: string, newName: string, newMemo?: string) => void;
+  handleSaveEditedPlace: (id: string, newName: string, newMemo?: string, newTags?: string[]) => void;
   handleDeletePlace: (id: string) => void;
   handleClearAllPlaces: () => void;
   handleRestorePlace: (id: string) => void;
@@ -117,8 +117,8 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
     setEditingPlace(newPlace);
   }, [savedPlaces.length, showToast]);
 
-  const handleSaveEditedPlace = useCallback((id: string, newName: string, newMemo?: string) => {
-    const updated = updatePlace(id, newName, newMemo);
+  const handleSaveEditedPlace = useCallback((id: string, newName: string, newMemo?: string, newTags?: string[]) => {
+    const updated = updatePlace(id, newName, newMemo, newTags);
     setSavedPlaces(updated);
     showToast('장소 정보가 성공적으로 변경되었습니다.');
   }, [showToast]);

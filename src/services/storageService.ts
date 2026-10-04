@@ -68,7 +68,8 @@ export function savePlace(place: SavedPlace): SavedPlace[] {
 export function updatePlace(
   id: string,
   customName: string,
-  memo?: string
+  memo?: string,
+  tags?: string[]
 ): SavedPlace[] {
   try {
     const current = getSavedPlaces();
@@ -78,6 +79,7 @@ export function updatePlace(
           ...item,
           customName: customName.trim() || item.customName,
           memo: memo !== undefined ? memo.trim() : item.memo,
+          tags: tags !== undefined ? tags : item.tags,
         };
       }
       return item;

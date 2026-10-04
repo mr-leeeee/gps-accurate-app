@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, Edit3, Check, Tag } from 'lucide-react';
 import type { SavedPlace } from '../types/location';
+import { parseTags, formatTags } from '../utils/placeTags';
 
 interface EditModalProps {
   place: SavedPlace | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (id: string, newName: string, newMemo?: string) => void;
+  onSave: (id: string, newName: string, newMemo?: string, newTags?: string[]) => void;
 }
 
 const PRESET_NAMES = [
@@ -27,11 +28,13 @@ export const EditModal: React.FC<EditModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [memo, setMemo] = useState('');
+  const [tagsText, setTagsText] = useState('');
 
   useEffect(() => {
     if (place) {
       setName(place.customName);
       setMemo(place.memo || '');
+      setTagsText(formatTags(place.tags));
     }
   }, [place]);
 
@@ -40,7 +43,7 @@ export const EditModal: React.FC<EditModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave(place.id, name.trim(), memo.trim());
+    onSave(place.id, name.trim(), memo.trim(), parseTags(tagsText));
     onClose();
   };
 
@@ -113,6 +116,20 @@ export const EditModal: React.FC<EditModalProps> = ({
               placeholder="예: 지하 2층 B-03 기둥 앞, 오후 5시 만남"
               rows={2}
               className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm resize-none"
+            />
+          </div>
+
+          {/* 태그 입력 */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              태그 (선택, 쉼표로 구분)
+            </label>
+            <input
+              type="text"
+              value={tagsText}
+              onChange={(e) => setTagsText(e.target.value)}
+              placeholder="예: 집, 회사, 낚시"
+              className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
             />
           </div>
 

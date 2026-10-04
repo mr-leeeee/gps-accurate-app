@@ -17,6 +17,7 @@ import {
 import { exportBackup } from '../services/backupService';
 import { copyLocationText, shareLocation, openRealdexWithAddress } from '../services/navigationService';
 import { calculateDrivingRoute, formatDistance, formatDuration } from '../services/routeService';
+import { buildDefaultPlaceName } from '../utils/placeName';
 import { logger } from '../utils/logger';
 import { AppError } from '../types/errors';
 
@@ -86,7 +87,11 @@ export function usePlaceManagement({ showToast }: UsePlaceManagementProps): UseP
     const timeStr = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
     const count = savedPlaces.length + 1;
 
-    const defaultName = `장소 ${count} (${timeStr})`;
+    const defaultName = buildDefaultPlaceName(
+      currentLocation.address,
+      count,
+      timeStr
+    );
 
     const newPlace: SavedPlace = {
       id: 'place_' + Date.now(),

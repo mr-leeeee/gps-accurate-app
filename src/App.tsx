@@ -278,6 +278,7 @@ export const App: React.FC = () => {
             onImportBackup={handleImportBackup}
             onExportBackup={handleExportBackup}
             trashCount={trash.length}
+            currentLocation={currentLocation}
           />
         </main>
 

@@ -10,7 +10,8 @@ import {
   Upload,
   Undo2,
 } from 'lucide-react';
-import type { SavedPlace } from '../types/location';
+import type { SavedPlace, LocationData } from '../types/location';
+import { calculateHaversineDistance } from '../services/routeService';
 import { PlaceItem } from './PlaceItem';
 
 interface PlaceListProps {
@@ -29,6 +30,7 @@ interface PlaceListProps {
   onImportBackup?: (json: string) => boolean;
   onExportBackup?: () => Promise<void>;
   trashCount?: number;
+  currentLocation?: LocationData | null;
 }
 
 export const PlaceList: React.FC<PlaceListProps> = ({
@@ -47,8 +49,10 @@ export const PlaceList: React.FC<PlaceListProps> = ({
   onImportBackup,
   onExportBackup,
   trashCount = 0,
+  currentLocation = null,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortMode, setSortMode] = useState<'newest' | 'name' | 'distance'>('newest');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredPlaces = places.filter(
@@ -57,6 +61,28 @@ export const PlaceList: React.FC<PlaceListProps> = ({
       p.originalAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.memo && p.memo.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const sortedPlaces = [...filteredPlaces].sort((a, b) => {
+    if (sortMode === 'name') {
+      return a.customName.localeCompare(b.customName, 'ko');
+    }
+    if (sortMode === 'distance' && currentLocation) {
+      const da = calculateHaversineDistance(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        a.latitude,
+        a.longitude
+      );
+      const db = calculateHaversineDistance(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        b.latitude,
+        b.longitude
+      );
+      return da - db;
+    }
+    return 0;
+  });
 
   const handlePickBackupFile = () => {
     fileInputRef.current?.click();
@@ -200,11 +226,32 @@ export const PlaceList: React.FC<PlaceListProps> = ({
         </div>
       )}
 
+      {/* 정렬 방식 */}
+      {places.length > 1 && (
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] text-slate-400">
+            {sortedPlaces.length}개{searchQuery ? ' 검색됨' : ''}
+          </span>
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as 'newest' | 'name' | 'distance')}
+            aria-label="장소 정렬 방식"
+            className="px-2 py-1.5 rounded-lg bg-slate-900/70 border border-slate-700 text-slate-200 text-[11px] focus:outline-none focus:border-blue-500"
+          >
+            <option value="newest">최신순</option>
+            <option value="name">이름순</option>
+            <option value="distance" disabled={!currentLocation}>
+              거리순{currentLocation ? '' : ' (위치 필요)'}
+            </option>
+          </select>
+        </div>
+      )}
+
       {/* 장소 목록 렌더링 */}
       <div role="list" aria-label="저장된 장소 목록">
-        {filteredPlaces.length > 0 ? (
+        {sortedPlaces.length > 0 ? (
           <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
-            {filteredPlaces.map((place) => (
+            {sortedPlaces.map((place) => (
               <div role="listitem" key={place.id}>
                 <PlaceItem
                   place={place}
